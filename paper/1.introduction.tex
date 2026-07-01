@@ -1,0 +1,85 @@
+\section{Introduction}
+
+Las heladas meteorológicas, definidas como el descenso de la
+temperatura del aire por debajo de $0^{\circ}\text{C}$, constituyen uno de los
+fenómenos climáticos extremos de mayor recurrencia en las zonas altoandinas del
+Perú. En un país donde amplios sectores de la población rural dependen de una
+agricultura y ganadería de subsistencia altamente sensibles a la variabilidad
+térmica nocturna, estos eventos representan una amenaza estructural para la
+seguridad alimentaria y la estabilidad económica de las comunidades más
+vulnerables. La creciente irregularidad de los patrones climáticos ha
+intensificado la frecuencia y severidad de estos episodios, situando su
+predicción anticipada como un problema de relevancia nacional.
+
+Desde una perspectiva socioeconómica, la ocurrencia de una helada puede destruir
+en cuestión de horas la totalidad de un cultivo sensible, provocando pérdidas
+directas para el productor y presionando las cadenas de abastecimiento
+regionales. La capacidad de anticipar estos eventos con antelación suficiente
+permite activar medidas de mitigación en campo, reduciendo el impacto económico
+y protegiendo los medios de vida de las poblaciones afectadas. Técnicamente, sin
+embargo, los modelos numéricos de predicción meteorológica tradicionales suelen
+carecer de la resolución espacial necesaria para capturar los microclimas
+locales que determinan la ocurrencia de heladas a escala puntual. En este
+contexto, los métodos de aprendizaje automático supervisado, entrenados
+directamente sobre registros históricos de estaciones meteorológicas, han
+emergido como una alternativa computacionalmente eficiente y de bajo costo para
+la predicción de estos eventos a nivel local
+\cite{diedrichs2018,talsma2023,rozante2023,perez2025}.
+
+No obstante, la aplicación efectiva de estas técnicas sobre datos meteorológicos
+reales impone desafíos que trascienden la simple selección de un algoritmo. En
+términos de minería de datos, la predicción de heladas se formula como un
+problema de \emph{clasificación binaria supervisada fuertemente desbalanceado},
+en el que la clase de interés (ocurrencia de helada) es estadísticamente
+minoritaria frente a las condiciones climáticas normales. Este desbalance sesga
+a los clasificadores convencionales hacia la clase mayoritaria, tornando
+inadecuadas métricas como la exactitud y exigiendo estrategias explícitas de
+mitigación \cite{azhar2023,wang2021}. A este desafío se suman tres
+complicaciones inherentes al dominio: (i) la presencia de códigos de error de
+instrumentación no documentados que contaminan la topología estadística de los
+datos crudos; (ii) el riesgo de fuga de información (\emph{data leakage}) al
+derivar la variable objetivo a partir de una medición física que, de conservarse
+entre los predictores, induciría una regla determinista trivial; y (iii) la alta
+multicolinealidad entre variables climáticas interdependientes, que introduce
+redundancia y degrada la convergencia del modelado. El presente trabajo aborda
+integralmente estos cuatro aspectos mediante un pipeline reproducible diseñado
+específicamente para el contexto meteorológico peruano.
+
+Las principales contribuciones de este trabajo son:
+\begin{enumerate}
+\item Se identifica y corrige de forma sistemática un código de error de sensor
+(\texttt{-999}) no documentado en el conjunto de datos crudo, mediante un
+diagnóstico exploratorio comparativo de las funciones de densidad antes y después
+de la corrección, recuperando la topología estadística real de las variables.
+\item Se diseña una variable objetivo físicamente fundamentada
+(\emph{Target\_Helada}) a partir del umbral termodinámico de $0^{\circ}\text{C}$,
+eliminando explícitamente el predictor definitorio del espacio de características
+para prevenir la fuga de información por predicción tautológica.
+\item Se construye un pipeline de preprocesamiento robusto a valores atípicos
+físicamente válidos, combinando imputación por mediana y \texttt{RobustScaler},
+justificado matemáticamente frente a la estandarización clásica y a la
+eliminación de \emph{outliers}, seguido de una reducción de dimensionalidad
+mediante Análisis de Componentes Principales (PCA) que retiene el 95\% de la
+varianza empírica.
+\item Se optimiza un \emph{Random Forest Classifier} con ponderación balanceada
+de clases mediante \texttt{GridSearchCV}, empleando el F1-Score Macro como función
+objetivo para penalizar directamente los falsos negativos críticos, en lugar de
+recurrir al sobremuestreo sintético empleado por trabajos previos.
+\item Se realiza una evaluación integral del modelo mediante métricas robustas al
+desbalance de clases (curva ROC-AUC, curva Precision-Recall e índice Kappa de
+Cohen), acompañada de un análisis de la capacidad discriminante de los
+componentes principales.
+\end{enumerate}
+
+El resto de este artículo está organizado de la siguiente manera. La
+Sección~\ref{sec:relwork} presenta los trabajos relacionados y una comparación
+sistemática con el enfoque propuesto. La Sección~\ref{sec:dataset} describe el
+conjunto de datos y el análisis exploratorio, incluyendo la detección de
+anomalías. La Sección~\ref{sec:preprocessing} detalla el preprocesamiento
+matemático de los datos. La Sección~\ref{sec:methodology} expone la metodología
+propuesta, sus algoritmos y la estrategia de optimización. La
+Sección~\ref{sec:implementation} describe la implementación de software y las
+consideraciones de reproducibilidad. La Sección~\ref{sec:results} presenta los
+resultados experimentales. La Sección~\ref{sec:discussion} interpreta los hallazgos, sus
+fortalezas y limitaciones. Finalmente, la Sección~\ref{sec:conclusions} presenta
+las conclusiones y el trabajo futuro.

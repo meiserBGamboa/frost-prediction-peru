@@ -1,0 +1,54 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{float}
+
+% --- Configuración de Página ---
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+\begin{document}
+\setlength{\parskip}{1em}    
+\setlength{\parindent}{2em}
+
+\input{title_page}
+    
+% --- Datos del Informe ---
+\title{\textbf{Predicción de Heladas Meteorológicas en el Perú mediante un Pipeline de Aprendizaje Automático Robusto a Anomalías: Imputación por Mediana, Escalamiento Robusto, PCA y Random Forest Optimizado}}
+\author{
+Meiser Brayan Gamboa cuello \\ 
+\small Universidad Nacional de Ingeniería \\
+\small meiser.gamboa.c@uni.pe
+\and
+Lino Alejandro Taipe Mendivil \\ 
+\small Universidad Nacional de Ingeniería \\
+\small c@uni.pe
+}
+\date{
+\small
+Curso: Minería de Datos (CC442) --- Ciclo 2026-I\\
+Profesor: Dr. Marcos Antonio Alania Vicente\\[0.5em]
+\today
+}
+\maketitle
+
+\input{0.abstracts}
+\input{1.introduction}
+\input{2.relwork}
+\input{3.dataset}
+\input{4.preprocessing}
+\input{5.methodology}
+\input{6.implementation}
+\input{7.results}
+\input{8.discussion}
+\input{9.conclusions}
+\input{10.bibliografia}
+
+\end{document}

@@ -1,0 +1,117 @@
+\section{Discusión de Resultados}\label{sec:discussion}
+
+\subsection{Idoneidad del algoritmo frente a las propiedades de los datos}
+La elección de un ensamble Random Forest no fue arbitraria, sino una consecuencia
+directa de las propiedades intrínsecas del conjunto de datos reveladas durante el
+análisis exploratorio. Cuatro características del dominio favorecieron
+específicamente a este algoritmo frente a alternativas.
+
+Primero, el EDA evidenció \emph{alta multicolinealidad} entre grupos de sensores
+relacionados (variantes de viento y de temperatura). Los árboles de decisión que
+componen el bosque realizan particiones ortogonales del espacio de
+características, lo que los hace intrínsecamente robustos a la redundancia lineal
+entre predictores; combinados con la reducción de dimensionalidad vía PCA, que
+descorrelaciona explícitamente el espacio, se obtuvo una sinergia geométrica
+favorable a las particiones axiales del ensamble. Un modelo lineal como la
+regresión logística habría sufrido de inestabilidad en sus coeficientes ante esta
+multicolinealidad.
+
+Segundo, el conjunto presentaba \emph{ruido de instrumentación} en forma del
+código \texttt{-999} y \emph{outliers univariados legítimos} (precipitación de
+hasta $470$\,mm). Random Forest es notablemente tolerante a valores atípicos, dado
+que sus divisiones se basan en umbrales ordinales y no en distancias métricas
+absolutas; esto contrasta con algoritmos sensibles a la escala como SVM con
+kernel RBF o $k$-NN, cuyo desempeño se habría degradado sin un tratamiento de
+outliers más agresivo. La combinación con \texttt{RobustScaler} reforzó esta
+tolerancia al centrar y escalar mediante estadísticos resistentes (mediana e
+IQR).
+
+Tercero, el problema exhibió un \emph{desbalance de clases severo} ($16.24\%$
+frente a $83.76\%$). La capacidad de Random Forest de incorporar ponderación de
+clases (\texttt{class\_weight='balanced'}) permitió reajustar la función de
+decisión hacia la clase minoritaria sin recurrir a generación sintética de
+muestras, cuyo uso ---según se discutió en el estado del arte--- puede magnificar
+la complejidad de datos ya ruidosos. La optimización sobre F1-Score Macro alineó
+directamente la función objetivo con la métrica operativamente relevante.
+
+Cuarto, la señal predictiva resultó \emph{no trivial en su ubicación espectral}:
+el análisis de impureza de Gini reveló que la capacidad discriminante reside en
+componentes de varianza intermedia (PC3, PC2) y no en la dirección dominante
+(PC1). La naturaleza no paramétrica de Random Forest, capaz de capturar
+interacciones no lineales entre componentes sin asumir una forma funcional
+predeterminada, resultó adecuada para explotar una señal distribuida de esta
+manera, algo que un clasificador lineal sobre PC1 no habría capturado.
+
+\subsection{Interpretación del compromiso Precision--Recall}
+El resultado central ---un \emph{Recall} de $92.34\%$ frente a una \emph{Precision}
+de $61.09\%$ en la clase de helada--- debe interpretarse a la luz del contexto de
+aplicación y no como una deficiencia. En un sistema de alerta temprana
+agrometeorológica, la matriz de costos es marcadamente asimétrica: el costo de un
+falso negativo (una helada no anticipada que destruye un cultivo) supera
+ampliamente el de un falso positivo (una alerta preventiva que no se materializa).
+La ponderación de clases y la optimización sobre F1-Macro desplazaron
+deliberadamente el modelo hacia la sensibilidad, priorizando la detección
+exhaustiva de eventos críticos. El elevado ROC-AUC ($0.9690$) confirma que esta
+sensibilidad no se obtuvo a costa de una capacidad discriminante global pobre.
+
+\subsection{Amenazas a la validez interna}
+La validez interna se refiere a si las conclusiones del experimento son correctas
+dentro del entorno controlado del estudio. Se identifican las siguientes
+amenazas.
+
+\emph{Prevención de fuga de información.} El riesgo más severo ---la fuga por
+predicción tautológica--- fue mitigado explícitamente al eliminar
+\texttt{temp\_min\_2m} del espacio de predictores tras derivar de ella la etiqueta.
+Asimismo, todos los parámetros de imputación y escalamiento se ajustaron
+exclusivamente sobre el conjunto de entrenamiento, transformando el de prueba de
+forma ciega. No obstante, el ajuste de PCA también se realizó sobre el conjunto
+de entrenamiento, lo cual es metodológicamente correcto, pero su interacción con
+la ponderación de clases no fue objeto de una validación anidada, lo que
+constituye una amenaza residual menor.
+
+\emph{Sesgo de selección en la matriz de correlación.} El análisis de correlación
+de Pearson se computó sobre una submuestra de $20\,000$ registros completos, no
+sobre la totalidad del conjunto. Aunque la submuestra fue aleatoria y con semilla
+fija, la exclusión de registros con nulos (\texttt{dropna}) podría introducir un
+sesgo si la ausencia de datos no fuese completamente aleatoria (MCAR). Dado que
+los faltantes provienen de fallos de sensor uniformemente distribuidos
+($0.03\%$), este sesgo se considera despreciable, pero no puede descartarse
+formalmente.
+
+\emph{Ausencia de validación estadística.} Como se detalló en la
+Sección~\ref{sec:results}, el experimento no incluye múltiples ejecuciones
+independientes ni modelos de línea base, por lo que no es posible afirmar con
+respaldo estadístico que el desempeño observado sea significativamente superior al
+de alternativas. Las conclusiones se sustentan en un único punto experimental, lo
+que constituye la principal amenaza a la validez interna del estudio.
+
+\subsection{Amenazas a la validez externa}
+La validez externa concierne a la capacidad de generalización del modelo a
+entornos productivos fuera del conjunto de prueba.
+
+\emph{Representatividad geográfica y temporal.} El conjunto abarca estaciones
+peruanas en un rango de latitud $[-18.01, -8.19]$ y altitud
+$[1079, 4691]$\,m.s.n.m., a lo largo del periodo 2000--2025. La generalización a
+microclimas no representados en esta cobertura, o a regiones de menor altitud, no
+está garantizada. La helada es un fenómeno intrínsecamente local, y un modelo
+entrenado sobre estas estaciones podría degradar su desempeño en ubicaciones con
+regímenes térmicos distintos.
+
+\emph{Deriva de distribución (\emph{dataset shift}).} En un despliegue productivo,
+los patrones climáticos pueden desviarse de la distribución de entrenamiento por
+efecto de la variabilidad climática de largo plazo. Un modelo estático como el
+presentado requeriría reentrenamiento periódico para mantener su validez ante
+posibles cambios en las distribuciones marginales de las variables.
+
+\emph{Dependencia de la calidad de instrumentación.} El pipeline asume que los
+fallos de sensor se codifican mediante el valor \texttt{-999}. En un entorno
+productivo con sensores heterogéneos que empleen otros códigos de error o que
+produzcan lecturas corruptas de forma no señalizada, el mecanismo de corrección
+podría no capturar todas las anomalías, comprometiendo la robustez del sistema.
+
+\emph{Ausencia de estructura temporal explícita.} El modelo trata cada
+observación de forma independiente, sin incorporar descriptores espaciotemporales
+(estacionalidad, tendencia). En producción, la predicción anticipada de heladas
+se beneficiaría de una formulación que capture la dinámica temporal, lo que
+sugiere que el desempeño en un escenario de pronóstico real (a $t+k$ horas) podría
+diferir del obtenido en la clasificación sobre observaciones concurrentes.

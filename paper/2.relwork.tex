@@ -1,0 +1,38 @@
+\section{Trabajos Relacionados}\label{sec:relwork}
+ 
+La predicción de heladas mediante aprendizaje automático ha sido abordada en múltiples contextos agroclimáticos. Diedrichs et al. \cite{diedrichs2018} desarrollaron un sistema de soporte a la decisión basado en Random Forest y regresión logística sobre datos de estaciones meteorológicas de la provincia de Mendoza (Argentina), aplicando SMOTE para mitigar el desbalance de clases. Talsma et al. \cite{talsma2023} compararon redes neuronales profundas, redes convolucionales y Random Forest para la predicción de heladas a múltiples horizontes temporales (6--48 h) en Nuevo México (EE.\,UU.), reportando errores de predicción de temperatura mínima entre 1.53 y 1.72\,$^{\circ}$C. Rozante et al. \cite{rozante2023} emplearon perceptrones multicapa (MLP) con optimizadores ADAM y SGD para mejorar las predicciones del modelo numérico Eta en el sur de Brasil. Más recientemente, Pérez Tárraga et al. \cite{perez2025} compararon un conjunto amplio de algoritmos de clasificación, incluyendo Random Forest, sobre datos de la Agencia Estatal de Meteorología de España (AEMET), aplicando igualmente SMOTE para el desbalance de clases y concluyendo que Random Forest ofrece el mejor desempeño para horizontes cortos ($\leq$24\,h).
+ 
+En el ámbito específico del manejo de clases desbalanceadas, Azhar et al. \cite{azhar2023} realizaron una revisión comparativa exhaustiva de variantes de SMOTE frente a distintas complejidades de datos (ruido, solapamiento de clases, subconjuntos pequeños). Wang et al. \cite{wang2021} presentaron una revisión sistemática de métodos de clasificación sobre conjuntos de datos desbalanceados, cubriendo tanto técnicas a nivel de datos como a nivel de algoritmo. Zhao \cite{zhao2024} propuso una variante de SMOTE basada en grafos de vecindad natural con núcleos de subgrafos para mejorar la calidad de las muestras sintéticas generadas.
+ 
+Respecto a la reducción de dimensionalidad en dominios meteorológicos, Galván et al. \cite{galvan2022} compararon PCA frente a métodos de reducción supervisada (LPP, LOL, SNMF) para el pronóstico de radiación solar a partir de rejillas meteorológicas de alta dimensionalidad, señalando las limitaciones del carácter lineal y no supervisado de PCA. En cuanto a la optimización de hiperparámetros, Bujang et al. \cite{bujang2021} evaluaron \texttt{GridSearchCV} y métodos alternativos (búsqueda aleatoria, algoritmos genéticos, Bayesianos) para la calibración de modelos de clasificación de Random Forest, mientras que Chen et al. \cite{chen2024soil} aplicaron Random Forest a la predicción estacional de contenido hídrico del suelo agrícola a partir de datos de precipitación, evidenciando la versatilidad del algoritmo en tareas de agrometeorología de precisión.
+ 
+La Tabla \ref{tab:relwork} resume los trabajos más relevantes revisados, publicados en los últimos cinco años en las bases IEEE Xplore, Springer, ACM y ScienceDirect, en comparación con el enfoque propuesto en este artículo.
+ 
+\begin{table}[H]
+\centering
+\caption{Comparación de trabajos relacionados publicados en los últimos cinco años}
+\label{tab:relwork}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{2.6cm}p{1.4cm}p{2.6cm}p{3.3cm}p{3.4cm}p{2.5cm}}
+\toprule
+\textbf{Referencia} & \textbf{Año} & \textbf{Fuente} & \textbf{Dominio} & \textbf{Método principal} & \textbf{Manejo de desbalance} \\
+\midrule
+Rozante et al. \cite{rozante2023} & 2023 & ScienceDirect & Predicción de heladas (Brasil) & MLP (ADAM/SGD) & No reportado \\
+Pérez Tárraga et al. \cite{perez2025} & 2025 & Springer (Earth Sci. Informatics) & Predicción de heladas (España) & Comparación de clasificadores (incl. RF) & SMOTE \\
+Azhar et al. \cite{azhar2023} & 2023 & IEEE TKDE & Datos desbalanceados (general) & Revisión comparativa de variantes SMOTE & SMOTE (múltiples variantes) \\
+Wang et al. \cite{wang2021} & 2021 & IEEE Access & Clasificación desbalanceada (general) & Revisión sistemática & Nivel de datos y de algoritmo \\
+Zhao \cite{zhao2024} & 2024 & Springer (J. Supercomputing) & Datos desbalanceados (general) & SMOTE sobre grafo de vecindad natural & SMOTE mejorado \\
+Bujang et al. \cite{bujang2021} & 2021 & IEEE Access & Predicción académica & Random Forest + optimización de hiperparámetros & \texttt{class\_weight} / búsqueda en grilla \\
+Galván et al. \cite{galvan2022} & 2022 & Springer (Applied Intelligence) & Pronóstico de radiación solar & PCA + métodos supervisados de reducción & No aplica \\
+Chen et al. \cite{chen2024soil} & 2024 & ScienceDirect & Contenido hídrico del suelo & Random Forest & No aplica \\
+\midrule
+\textbf{Propuesta (este trabajo)} & 2026 & --- & \textbf{Predicción de heladas (Perú)} & \textbf{RobustScaler + PCA + RF con \texttt{class\_weight = 'balanced'} y GridSearchCV} & \textbf{Ponderación balanceada de clases + optimización sobre F1-Macro} \\
+\bottomrule
+\end{tabular}%
+}
+
+\end{table}
+ 
+A diferencia de los trabajos previos, que en su mayoría emplean SMOTE como técnica principal de rebalanceo, el presente trabajo opta por la ponderación de clases (\texttt{class\_weight='balanced'}) combinada con optimización directa sobre F1-Score Macro, evitando la generación de muestras sintéticas en un espacio de alta dimensionalidad ya afectado por anomalías de sensor, y complementa el preprocesamiento con una corrección explícita de códigos de error de instrumentación no reportada en los estudios comparados.
+ 

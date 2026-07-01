@@ -1,0 +1,60 @@
+\section{Metodología Propuesta}\label{sec:methodology}
+ 
+\subsection{Pipeline general}
+El pipeline metodológico propuesto se estructura en las siguientes etapas secuenciales: (1) ingesta y diagnóstico de anomalías; (2) corrección de códigos de error de sensor; (3) ingeniería de la variable objetivo con prevención de \emph{data leakage}; (4) partición estratificada; (5) imputación por mediana y escalamiento robusto ajustados únicamente sobre el conjunto de entrenamiento; (6) reducción de dimensionalidad mediante PCA; (7) entrenamiento y optimización de un Random Forest Classifier balanceado; (8) evaluación integral sobre el conjunto de prueba. La Fig. \ref{fig:pipeline} resume esta arquitectura.
+ 
+\begin{figure}[H]
+\centering
+\begin{verbatim}
+%% DIAGRAMA MERMAID (a convertir a figura IEEE)
+%% graph TD
+%%   A[Ingesta DATASET.csv] --> B[Diagnostico EDA -999]
+%%   B --> C[Correccion NaN]
+%%   C --> D[Target_Helada + eliminacion leakage]
+%%   D --> E[Split 80/20 estratificado]
+%%   E --> F[Imputacion mediana + RobustScaler]
+%%   F --> G[PCA K=5, 95% varianza]
+%%   G --> H[RandomForest + GridSearchCV]
+%%   H --> I[Evaluacion: ROC, PR, Kappa]
+\end{verbatim}
+\caption{Diagrama de flujo del pipeline metodológico propuesto (representación textual Mermaid, pendiente de conversión a figura vectorial IEEE).}
+\label{fig:pipeline}
+\end{figure}
+ 
+\subsection{Algoritmo de clasificación}
+Se seleccionó un ensamble de árboles de decisión (\emph{Random Forest Classifier}) por su afinidad geométrica con particiones ortogonales del espacio, coherente con la naturaleza del subespacio generado por PCA. El modelo se configuró con ponderación balanceada de clases (\texttt{class\_weight='balanced'}) para compensar el desbalance de clases documentado en la Sección III-G, ajustando los pesos de manera inversamente proporcional a la frecuencia de cada clase:
+\begin{equation}
+w_c = \frac{N}{2 \cdot N_c}
+\label{eq:classweight}
+\end{equation}
+donde $N$ es el número total de instancias y $N_c$ el número de instancias de la clase $c$.
+ 
+\subsection{Función objetivo y optimización de hiperparámetros}
+La optimización se realizó mediante \texttt{GridSearchCV} con validación cruzada de 3 particiones (\emph{3-fold}), utilizando como función objetivo el F1-Score Macro:
+\begin{equation}
+F1_{macro} = \frac{1}{C} \sum_{c=1}^{C} \frac{2 \cdot P_c \cdot R_c}{P_c + R_c}
+\label{eq:f1macro}
+\end{equation}
+donde $P_c$ y $R_c$ son la precisión y el \emph{recall} de la clase $c$, respectivamente. Esta métrica fue elegida en lugar de la exactitud (\emph{accuracy}), ya que, dado el desbalance del 83.76\% frente a 16.24\%, un clasificador trivial que prediga siempre la clase mayoritaria superaría el 90\% de exactitud sin ninguna utilidad práctica.
+ 
+La Tabla \ref{tab:grid} resume el espacio de búsqueda de hiperparámetros explorado.
+ 
+\begin{table}[H]
+\centering
+\caption{Espacio de búsqueda de hiperparámetros (\texttt{GridSearchCV})}
+\label{tab:grid}
+\begin{tabular}{lll}
+\toprule
+\textbf{Hiperparámetro} & \textbf{Valores explorados} & \textbf{Descripción} \\
+\midrule
+\texttt{n\_estimators} & \{50, 100\} & Número de árboles \\
+\texttt{max\_depth} & \{5, 10\} & Profundidad máxima \\
+\texttt{min\_samples\_split} & \{2, 5\} & Mínimo de muestras por nodo \\
+\bottomrule
+\end{tabular}
+\end{table}
+ 
+La grilla resultante comprende 8 combinaciones de hiperparámetros, evaluadas mediante validación cruzada de 3 particiones, totalizando 24 ajustes de modelo. Se utilizó \texttt{n\_jobs=-1} para paralelizar el cómputo sobre todos los núcleos disponibles del entorno de ejecución.
+ 
+\subsection{Validación}
+Los hiperparámetros óptimos obtenidos fueron $\texttt{max\_depth}=10$, $\texttt{min\_samples\_split}=2$ y $\texttt{n\_estimators}=100$, alcanzando un F1-Score Macro interno de validación cruzada de $0.8330$.

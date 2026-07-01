@@ -1,0 +1,82 @@
+\section{Conclusiones y Trabajo Futuro}\label{sec:conclusions}
+
+\subsection{Conclusiones técnicas}
+Este trabajo desarrolló y evaluó un pipeline reproducible de minería de datos
+para la predicción binaria de heladas en el territorio peruano, sobre un conjunto
+de $1\,672\,827$ observaciones meteorológicas. De la evidencia experimental se
+extraen las siguientes conclusiones directas:
+
+\begin{enumerate}
+\item El ensamble Random Forest optimizado alcanzó un \emph{Recall} de $92.34\%$
+en la detección de heladas y un ROC-AUC de $0.9690$, con un índice Kappa de Cohen
+de $0.6710$ (concordancia sustancial), validando el sistema como una herramienta
+de alerta temprana de alta sensibilidad.
+\item La estrategia de ponderación balanceada de clases combinada con
+optimización directa sobre F1-Score Macro resultó eficaz para manejar un
+desbalance severo ($16.24\%$ frente a $83.76\%$) sin recurrir a generación
+sintética de muestras, evitando así la amplificación de la complejidad de datos
+ya afectados por ruido de instrumentación.
+\item La cercanía entre el F1-Score Macro de validación interna ($0.8330$) y el de
+prueba ($0.8338$) evidencia una capacidad de generalización estable y ausencia de
+sobreajuste significativo dentro del dominio del conjunto evaluado.
+\item El pipeline de escalamiento robusto (\texttt{RobustScaler}) seguido de PCA
+redujo la dimensionalidad de 15 a 5 componentes reteniendo el $95\%$ de la
+varianza, demostrando que el problema admite una representación compacta sin
+pérdida sustancial de capacidad predictiva.
+\end{enumerate}
+
+\subsection{Lecciones aprendidas sobre los datos y la ingeniería de características}
+El proceso de desarrollo dejó tres aprendizajes de valor sobre el comportamiento
+de los datos y su preparación.
+
+Primero, el diagnóstico visual exploratorio previo a cualquier transformación
+matemática resultó indispensable: el código de error de sensor \texttt{-999} se
+encontraba enmascarado y no habría sido detectado por una inspección estructural
+convencional (\texttt{df.info()} reportaba cero nulos). Su omisión habría
+distorsionado irreversiblemente tanto la matriz de correlación como el
+escalamiento, comprometiendo todo el análisis posterior. Esto confirma que un
+conjunto declarado ``preprocesado'' por su fuente exige, no obstante, una
+auditoría de calidad independiente.
+
+Segundo, la ingeniería de la variable objetivo demostró que la prevención de fuga
+de información es un requisito de diseño y no un detalle: conservar
+\texttt{temp\_min\_2m} entre los predictores habría inducido una regla
+determinista trivial con una correlación artificial cercana a $-1$, ocultando las
+verdaderas relaciones climáticas del sistema.
+
+Tercero, el análisis de impureza de Gini reveló que la capacidad discriminante no
+reside en la dirección de mayor varianza global (PC1), sino en componentes
+latentes de varianza intermedia (PC3, PC2). Esta lección advierte contra la
+suposición ingenua de que las primeras componentes principales concentran
+siempre la señal predictiva más relevante.
+
+\subsection{Trabajo futuro}
+Se identifican cuatro líneas de trabajo futuro de carácter metodológico.
+
+\emph{Validación estadística rigurosa.} La línea prioritaria consiste en dotar al
+estudio de respaldo inferencial mediante la incorporación de modelos de línea base
+(Regresión Logística, SVM, XGBoost) entrenados bajo el mismo pipeline, ejecutando
+validación cruzada estratificada repetida con múltiples semillas y aplicando
+pruebas de significancia (Friedman con post-hoc de Nemenyi, o Wilcoxon con
+corrección de Bonferroni) para contrastar formalmente el modelo propuesto frente a
+las alternativas.
+
+\emph{Enriquecimiento de características espaciotemporales.} Se propone incorporar
+descriptores que capturen la dinámica temporal del fenómeno, en particular una
+codificación trigonométrica (seno/coseno) de las variables cíclicas de día y mes,
+así como reformular el problema como un pronóstico a $t+k$ horas en lugar de una
+clasificación sobre observaciones concurrentes, acercando el sistema a un
+escenario operativo real de alerta anticipada.
+
+\emph{Exploración de arquitecturas profundas.} Dada la escala del conjunto (más de
+1.6 millones de observaciones), resulta pertinente evaluar arquitecturas de
+aprendizaje profundo ---redes recurrentes (LSTM/GRU) o convolucionales
+temporales--- capaces de modelar dependencias secuenciales, contrastándolas con el
+ensamble Random Forest como línea base robusta.
+
+\emph{Técnicas de rebalanceo y aprendizaje semisupervisado.} Se plantea explorar
+técnicas de generación sintética adaptativa (ADASYN) sobre el espacio de
+entrenamiento para intentar reducir la tasa de falsos positivos sin sacrificar la
+sensibilidad alcanzada, así como estrategias de aprendizaje semisupervisado que
+aprovechen registros meteorológicos no etiquetados de estaciones adicionales para
+mejorar la generalización geográfica del modelo.

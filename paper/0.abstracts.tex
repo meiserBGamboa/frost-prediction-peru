@@ -1,0 +1,30 @@
+\begin{abstract}
+Las heladas meteorológicas son uno de los eventos climáticos extremos de mayor
+impacto sobre la agricultura altoandina del Perú, generando pérdidas severas en
+cultivos y ganado. Su predicción temprana constituye un problema de
+clasificación binaria fuertemente desbalanceado, en el que los clasificadores
+convencionales favorecen la clase mayoritaria. A diferencia de trabajos previos
+que abordan este desbalance mediante sobremuestreo sintético (SMOTE) y suelen
+omitir la corrección de anomalías de instrumentación, este trabajo propone un
+pipeline de minería de datos que combina corrección explícita de errores de
+sensor, ponderación balanceada de clases y optimización orientada a la clase
+minoritaria. Sobre 1\,672\,827 observaciones meteorológicas horarias de
+estaciones peruanas (18 variables), se identificó y corrigió un código de error
+de sensor (\texttt{-999}) no documentado, se definió la variable objetivo
+mediante el umbral físico de $0^{\circ}\text{C}$ y se eliminó el predictor
+definitorio para evitar fuga de información. El preprocesamiento aplicó
+imputación por mediana y \texttt{RobustScaler}, seguido de PCA que redujo el
+espacio de 15 a 5 componentes reteniendo el 95\% de la varianza. Se entrenó un
+\emph{Random Forest Classifier} balanceado, optimizado mediante
+\texttt{GridSearchCV} (3-fold, F1-Score Macro). El modelo alcanzó un
+\emph{Recall} de 92.34\% y un \emph{F1-Score} macro de validación de 0.8330 en
+la detección de heladas, con un índice Kappa de Cohen de 0.6710, evidenciando
+concordancia sustancial. Los resultados validan el sistema como herramienta de
+alerta temprana de alta sensibilidad para la prevención de desastres
+agrometeorológicos.
+
+\vspace{0.5cm}
+\noindent \textbf{Palabras clave:} 
+Agriculture, data mining, meteorology, predictive models, principal component
+analysis, random forests.
+\end{abstract}

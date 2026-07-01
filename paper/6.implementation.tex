@@ -1,0 +1,117 @@
+\section{Implementación del Software}\label{sec:implementation}
+
+\subsection{Entorno tecnológico}
+El desarrollo se realizó íntegramente en \emph{Google Colab}, sobre un cuaderno
+Jupyter (formato \texttt{.ipynb}) ejecutado con un kernel de Python~3. El
+paradigma de cómputo es exclusivamente \emph{CPU}; no se emplearon librerías de
+aprendizaje profundo (PyTorch, TensorFlow) ni implementaciones de \emph{gradient
+boosting} (XGBoost, LightGBM), dado que el clasificador seleccionado ---un
+ensamble Random Forest--- está disponible de forma nativa en \emph{scikit-learn}.
+Cabe señalar, como contraste, que el autor original del repositorio de datos
+empleó un clasificador XGBoost sobre la versión filtrada del conjunto; el presente
+trabajo constituye un pipeline independiente basado en scikit-learn.
+
+La Tabla~\ref{tab:stack} resume el ecosistema de librerías identificado en las
+celdas de importación del cuaderno.
+
+\begin{table}[H]
+\centering
+\caption{Ecosistema tecnológico del proyecto}
+\label{tab:stack}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{2.2cm}p{5.4cm}}
+\toprule
+\textbf{Librería} & \textbf{Rol en el pipeline} \\
+\midrule
+\texttt{numpy} & Álgebra vectorial y control de semilla aleatoria \\
+\texttt{pandas} & Estructura de datos tabular e ingesta \\
+\texttt{matplotlib} & Visualización científica base \\
+\texttt{seaborn} & Visualización estadística (densidades, heatmaps) \\
+\texttt{kagglehub} & Ingesta programática del dataset desde Kaggle \\
+\texttt{scikit-learn} & Preprocesamiento, PCA, modelado, evaluación \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Dentro de \emph{scikit-learn}, los módulos utilizados son:
+\texttt{model\_selection} (\texttt{train\_test\_split}, \texttt{GridSearchCV}),
+\texttt{pipeline} (\texttt{Pipeline}), \texttt{impute} (\texttt{SimpleImputer}),
+\texttt{preprocessing} (\texttt{RobustScaler}), \texttt{compose}
+(\texttt{ColumnTransformer}), \texttt{decomposition} (\texttt{PCA}),
+\texttt{ensemble} (\texttt{RandomForestClassifier}) y \texttt{metrics}
+(\texttt{classification\_report}, \texttt{confusion\_matrix},
+\texttt{roc\_curve}, \texttt{auc}, \texttt{precision\_recall\_curve},
+\texttt{average\_precision\_score}, \texttt{cohen\_kappa\_score},
+\texttt{make\_scorer}, \texttt{f1\_score}).
+
+\subsection{Organización modular del código}
+El proyecto se implementó como un cuaderno lineal estructurado en bloques
+funcionales cohesivos, en lugar de un paquete distribuido en un directorio
+\texttt{/src}. Cada bloque encapsula una etapa del pipeline y expone sus
+resultados a la siguiente mediante variables de estado explícitas. La
+Tabla~\ref{tab:modules} describe esta organización modular por bloques.
+
+\begin{table}[H]
+\centering
+\caption{Organización modular del cuaderno por bloques funcionales}
+\label{tab:modules}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{1.0cm}p{3.0cm}p{3.4cm}}
+\toprule
+\textbf{Bloque} & \textbf{Responsabilidad} & \textbf{Artefactos producidos} \\
+\midrule
+1 & Configuración global e ingesta & \texttt{df}, semilla global \\
+2 & Diagnóstico y corrección de anomalías & \texttt{df} corregido, tasa de nulos \\
+3 & Ingeniería de etiqueta y correlación & \texttt{Target\_Helada}, matriz Pearson \\
+4 & Partición y preprocesamiento & \texttt{Pipeline}, \texttt{X\_train/test} escalados \\
+5 & Reducción de dimensionalidad & \texttt{PCA}, \texttt{X\_train/test\_pca} \\
+6 & Modelado y optimización & \texttt{best\_model}, hiperparámetros \\
+7 & Evaluación integral & métricas, curvas ROC/PR, Kappa \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El preprocesamiento se encapsuló mediante los abstractores composicionales de
+scikit-learn: un \texttt{Pipeline} que encadena \texttt{SimpleImputer} y
+\texttt{RobustScaler}, integrado a su vez en un \texttt{ColumnTransformer}. Este
+diseño garantiza que las transformaciones se ajusten (\emph{fit}) exclusivamente
+sobre el conjunto de entrenamiento y se apliquen (\emph{transform}) de forma ciega
+sobre el conjunto de prueba, previniendo la fuga de información estadística entre
+particiones.
+
+\subsection{Gestión de dependencias}
+Las dependencias se gestionan a través del entorno preinstalado de Google Colab,
+complementado por una instrucción de instalación explícita
+(\texttt{pip install kagglehub[pandas-datasets] seaborn matplotlib scikit-learn})
+documentada en la primera celda del cuaderno. El proyecto no fija versiones
+específicas mediante un archivo \texttt{requirements.txt} o \texttt{environment.yml};
+la adopción de un manifiesto de dependencias con versiones ancladas se plantea
+como una mejora para robustecer la reproducibilidad a largo plazo.
+
+\subsection{Reproducibilidad determinista}
+El determinismo del pipeline se garantiza mediante la fijación de una semilla
+global $\text{SEED}=42$, propagada por una función dedicada,
+\texttt{set\_global\_seed}, que controla las tres fuentes de aleatoriedad activas
+en el entorno de ejecución:
+\begin{enumerate}
+\item \texttt{random.seed(seed)} --- generador pseudoaleatorio de la biblioteca
+estándar de Python.
+\item \texttt{np.random.seed(seed)} --- generador de NumPy, base de las
+operaciones estocásticas de scikit-learn.
+\item \texttt{os.environ['PYTHONHASHSEED'] = str(seed)} --- fijación del hash de
+Python para estabilizar el orden de estructuras dependientes de hashing.
+\end{enumerate}
+
+Esta misma semilla se reutiliza de forma consistente en cada componente
+estocástico del pipeline: el muestreo de la matriz de correlación
+(\texttt{sample(random\_state=SEED)}), la partición estratificada
+(\texttt{train\_test\_split(random\_state=SEED)}), la descomposición espectral
+(\texttt{PCA(random\_state=SEED)}) y la inicialización del ensamble
+(\texttt{RandomForestClassifier(random\_state=SEED)}). Dado que el cómputo se
+ejecuta enteramente sobre CPU mediante scikit-learn, no intervienen fuentes de no
+determinismo asociadas a aceleradores por hardware (p.\,ej. operaciones no
+deterministas de CUDA/cuDNN), por lo que no se requieren mecanismos adicionales de
+control de aleatoriedad a nivel de GPU. La reproducibilidad experimental queda así
+garantizada de extremo a extremo bajo el entorno descrito.
