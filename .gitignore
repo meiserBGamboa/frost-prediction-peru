@@ -1,0 +1,10 @@
+data/*.csv
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
+*.aux
+*.log
+*.out
+*.pdf
+.DS_Store
+venv/
